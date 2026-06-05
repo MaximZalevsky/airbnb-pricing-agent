@@ -1,0 +1,534 @@
+/* ============================================================
+   CSS Custom Properties
+   ============================================================ */
+:root {
+  --color-primary:        #FF5A5F;
+  --color-primary-dark:   #E04A4F;
+  --color-primary-light:  rgba(255, 90, 95, 0.15);
+
+  --bubble-user-bg:       #FF5A5F;
+  --bubble-user-text:     #ffffff;
+  --bubble-agent-bg:      rgba(255, 255, 255, 0.93);
+  --bubble-agent-text:    #1a1a1a;
+
+  --header-bg:            rgba(15, 15, 25, 0.70);
+  --input-bar-bg:         rgba(15, 15, 25, 0.65);
+  --input-field-bg:       rgba(255, 255, 255, 0.10);
+  --input-field-focus-bg: rgba(255, 255, 255, 0.15);
+
+  --tier-budget:    #22c55e;
+  --tier-midrange:  #3b82f6;
+  --tier-upscale:   #f59e0b;
+  --tier-luxury:    #a855f7;
+  --tier-unknown:   #94a3b8;
+
+  --font-main: 'Heebo', 'Inter', system-ui, sans-serif;
+  --shadow-card: 0 8px 40px rgba(0, 0, 0, 0.22);
+  --radius-bubble: 18px;
+  --radius-card:   16px;
+}
+
+/* ============================================================
+   Reset & Base
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-main);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   Background
+   ============================================================ */
+#bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    url('../images/background.jpg') center / cover no-repeat,
+    linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+  filter: brightness(0.42) saturate(1.1);
+}
+
+/* ============================================================
+   App Shell
+   ============================================================ */
+#app {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+/* ============================================================
+   Header
+   ============================================================ */
+#chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  background: var(--header-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+#header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  /* In RTL this block is on the right side (inline-start) */
+}
+
+#app-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+#app-subtitle {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+#new-chat-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-main);
+  font-size: 0.80rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s, border-color 0.18s;
+  flex-shrink: 0;
+}
+
+#new-chat-btn:hover {
+  background: rgba(255, 255, 255, 0.20);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+#new-chat-btn:active {
+  transform: scale(0.97);
+}
+
+/* ============================================================
+   Chat Window
+   ============================================================ */
+#chat-window {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  scroll-behavior: smooth;
+}
+
+#chat-window::-webkit-scrollbar { width: 5px; }
+#chat-window::-webkit-scrollbar-track { background: transparent; }
+#chat-window::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 3px;
+}
+
+/* ============================================================
+   Message Bubbles
+   ============================================================ */
+.bubble {
+  max-width: 78%;
+  padding: 0.7rem 1rem;
+  font-size: 0.97rem;
+  line-height: 1.55;
+  word-break: break-word;
+  white-space: pre-wrap;
+  animation: fadein 0.22s ease;
+}
+
+/* Agent bubble — always physically LEFT side
+   margin-right:auto consumes available space on the right → pushes item left.
+   Physical margin properties are unaffected by dir="rtl", so no RTL override needed. */
+.bubble-agent {
+  margin-left: 0;
+  margin-right: auto;
+  background: var(--bubble-agent-bg);
+  color: var(--bubble-agent-text);
+  border-radius: var(--radius-bubble) var(--radius-bubble) var(--radius-bubble) 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+}
+
+/* User bubble — always physically RIGHT side
+   margin-left:auto consumes available space on the left → pushes item right. */
+.bubble-user {
+  margin-right: 0;
+  margin-left: auto;
+  background: var(--bubble-user-bg);
+  color: var(--bubble-user-text);
+  border-radius: var(--radius-bubble) var(--radius-bubble) 4px var(--radius-bubble);
+  box-shadow: 0 2px 10px rgba(255, 90, 95, 0.30);
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   Typing Indicator
+   ============================================================ */
+.hidden { display: none !important; }
+
+#typing-indicator {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  padding: 0.7rem 1rem;
+  width: fit-content;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(100, 100, 120, 0.55);
+  animation: bounce 1.3s infinite ease-in-out;
+}
+
+.dot:nth-child(1) { animation-delay: 0s; }
+.dot:nth-child(2) { animation-delay: 0.20s; }
+.dot:nth-child(3) { animation-delay: 0.40s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: translateY(0);    opacity: 0.5; }
+  40%            { transform: translateY(-7px); opacity: 1;   }
+}
+
+/* ============================================================
+   Input Bar
+   ============================================================ */
+#input-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  background: var(--input-bar-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  flex-shrink: 0;
+}
+
+#user-input {
+  flex: 1;
+  min-height: 42px;
+  max-height: 120px;
+  padding: 0.6rem 0.9rem;
+  background: var(--input-field-bg);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 21px;
+  color: #ffffff;
+  font-family: var(--font-main);
+  font-size: 0.97rem;
+  line-height: 1.45;
+  resize: none;
+  outline: none;
+  transition: background 0.18s, border-color 0.18s;
+  overflow-y: auto;
+}
+
+#user-input::placeholder { color: rgba(255, 255, 255, 0.42); }
+
+#user-input:focus {
+  background: var(--input-field-focus-bg);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* RTL: In a dir=rtl flex-row, textarea is on the right, button on the left.
+   We keep this natural RTL layout (consistent with Hebrew apps like WhatsApp). */
+#send-btn {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-primary);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s, transform 0.12s;
+}
+
+#send-btn:hover:not(:disabled) { background: var(--color-primary-dark); }
+#send-btn:active:not(:disabled) { transform: scale(0.93); }
+
+#send-btn:disabled {
+  background: rgba(255, 255, 255, 0.18);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Mirror send arrow for RTL */
+html[dir="rtl"] #send-btn svg {
+  transform: scaleX(-1);
+}
+
+/* ============================================================
+   Recommendation Card
+   ============================================================ */
+/* Recommendation card — sits on the agent (left) side, same as .bubble-agent */
+.rec-card {
+  margin-left: 0;
+  margin-right: auto;
+  width: min(100%, 520px);
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  animation: fadein 0.28s ease;
+  margin-top: 0.1rem;
+}
+
+.rec-header {
+  background: #1a1a2e;
+  color: rgba(255, 255, 255, 0.90);
+  font-size: 0.80rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.6rem 1.1rem;
+}
+
+.rec-body {
+  padding: 1rem 1.1rem 0;
+}
+
+.rec-price {
+  font-size: 2.3rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1;
+  margin-bottom: 0.2rem;
+  direction: ltr;  /* prices always LTR regardless of page dir */
+  text-align: right;  /* but right-aligned within the card for RTL layout */
+}
+
+html:not([dir="rtl"]) .rec-price { text-align: left; }
+
+.rec-per-night {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #888;
+  margin-right: 0.3rem;
+}
+
+html:not([dir="rtl"]) .rec-per-night { margin-left: 0.3rem; margin-right: 0; }
+
+.rec-range {
+  font-size: 0.84rem;
+  color: #666;
+  margin-bottom: 0.85rem;
+}
+
+.rec-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+}
+
+.tier-badge {
+  display: inline-block;
+  padding: 0.22rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.tier-budget    { background: var(--tier-budget); }
+.tier-midrange  { background: var(--tier-midrange); }
+.tier-upscale   { background: var(--tier-upscale); }
+.tier-luxury    { background: var(--tier-luxury); }
+.tier-unknown   { background: var(--tier-unknown); }
+
+.conf-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1;
+  min-width: 100px;
+}
+
+.conf-bar-container {
+  flex: 1;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.conf-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--color-primary);
+  transition: width 0.5s ease;
+}
+
+.conf-label {
+  font-size: 0.78rem;
+  color: #666;
+  white-space: nowrap;
+}
+
+/* Cross-city notice */
+.cross-city-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0 1.1rem 0.85rem;
+  padding: 0.65rem 0.85rem;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  color: #92400e;
+  line-height: 1.45;
+  direction: auto;
+}
+
+.cross-city-icon {
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+/* Comparables section */
+.comparables-section {
+  border-top: 1px solid #f0f0f0;
+  padding: 0.85rem 1.1rem 1rem;
+}
+
+.comparables-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.65rem;
+}
+
+.comparables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.55rem;
+}
+
+.comp-card {
+  background: #f8f9fa;
+  border: 1px solid #ebebeb;
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.80rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  direction: auto;
+}
+
+.comp-name {
+  font-weight: 600;
+  color: #1a1a1a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: ltr;
+  text-align: left;
+}
+
+.comp-detail {
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comp-price {
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-top: 0.2rem;
+  direction: ltr;
+  text-align: left;
+}
+
+.comp-per-night {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.source-city-badge {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  border-radius: 8px;
+  font-size: 0.70rem;
+  font-weight: 600;
+  margin-top: 0.2rem;
+  align-self: flex-start;
+}
+
+/* ============================================================
+   Mobile Responsive
+   ============================================================ */
+@media (max-width: 600px) {
+  #chat-header { padding: 0.7rem 0.9rem; }
+  #app-subtitle { display: none; }
+  #app-title { font-size: 0.95rem; }
+
+  #chat-window { padding: 0.9rem 0.75rem; }
+
+  .bubble { max-width: 88%; font-size: 0.93rem; }
+
+  .rec-card { width: 100%; }
+
+  .rec-price { font-size: 1.85rem; }
+
+  .comparables-grid {
+    grid-template-columns: repeat(2, 1fr);
+    overflow-x: auto;
+  }
+
+  #input-bar { padding: 0.6rem 0.75rem; }
+
+  .cross-city-notice { margin: 0 0 0.75rem; }
+}
+
+@media (max-width: 380px) {
+  .comparables-grid { grid-template-columns: 1fr 1fr; }
+  .rec-price { font-size: 1.6rem; }
+}

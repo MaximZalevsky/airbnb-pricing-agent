@@ -1,0 +1,16 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Runtime data (rebuilt automatically on startup)
+cache/*.pkl
+sessions/*.json
+
+# Editors / OS
+.DS_Store
+.vscode/
+.idea/
