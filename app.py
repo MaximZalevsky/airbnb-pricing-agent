@@ -29,13 +29,52 @@ logger = logging.getLogger(__name__)
 
 def _new_session() -> dict:
     return {
-        "session_id":    str(uuid.uuid4()),
-        "created_at":    datetime.utcnow().isoformat(),
-        "last_accessed": datetime.utcnow().isoformat(),
-        "messages":      [],
-        "city":          None,
-        "last_features": None,
+        "session_id":        str(uuid.uuid4()),
+        "created_at":        datetime.utcnow().isoformat(),
+        "last_accessed":     datetime.utcnow().isoformat(),
+        "messages":          [],
+        "city":              None,
+        "listing_scenario":  None,
+        "expected_price":    None,
+        "last_features":     None,
+        "detected_language": "he",
     }
+
+
+# Fields that must be non-null before the ML pipeline runs.
+_REQUIRED_NEW = frozenset({
+    "neighbourhood_cleansed", "property_type", "room_type",
+    "accommodates", "bedrooms", "beds", "bathrooms", "minimum_nights",
+    "has_wifi", "has_kitchen", "has_tv", "has_ac",
+    "has_pool", "has_parking", "has_washer", "has_elevator",
+})
+
+_REQUIRED_EXISTING_EXTRA = frozenset({
+    "review_scores_rating", "review_scores_location", "review_scores_value",
+    "host_is_superhost", "instant_bookable",
+})
+
+
+def _is_ready_server(session: dict) -> bool:
+    """Return True only when all required fields for the detected scenario are present.
+
+    This is the authoritative readiness check — it overrides Gemini's ready_to_recommend
+    flag, which is advisory only.
+    """
+    scenario = session.get("listing_scenario")
+    if not scenario:
+        return False
+    if not session.get("city"):
+        return False
+    features = session.get("last_features") or {}
+    if not all(features.get(f) is not None for f in _REQUIRED_NEW):
+        return False
+    if scenario == "existing_listing":
+        if not all(features.get(f) is not None for f in _REQUIRED_EXISTING_EXTRA):
+            return False
+        if session.get("expected_price") is None:
+            return False
+    return True
 
 
 def _read_session(session_id: str) -> dict:
@@ -123,7 +162,8 @@ def _register_routes(app: Flask) -> None:
 
         # ── 1. Domain check + feature extraction (single Gemini call) ─────────
         extracted, error_reply = extract_features(
-            client, city_names, session["messages"], user_message
+            client, city_names, session["messages"], user_message,
+            known_session=session,
         )
         if extracted is None:
             _append_and_save(session, user_message, error_reply)
@@ -136,9 +176,22 @@ def _register_routes(app: Flask) -> None:
             session["last_features"] = {**prev, **fresh}
         if extracted.get("city"):
             session["city"] = extracted["city"].lower()
+        if extracted.get("listing_scenario"):
+            session["listing_scenario"] = extracted["listing_scenario"]
+        if extracted.get("expected_price") is not None:
+            session["expected_price"] = extracted["expected_price"]
+
+        # Language is sticky: once Hebrew is detected it never reverts to English.
+        # This prevents short numeric answers from flipping the conversation language.
+        new_lang = extracted.get("detected_language")
+        if new_lang == "he":
+            session["detected_language"] = "he"
+        elif new_lang == "en" and session.get("detected_language") != "he":
+            session["detected_language"] = "en"
 
         # ── 3. Ask follow-up if not enough info yet ───────────────────────────
-        if not extracted.get("ready_to_recommend"):
+        # _is_ready_server is the authoritative gate; Gemini's flag is advisory only.
+        if not _is_ready_server(session):
             reply = extracted.get("follow_up") or "Could you tell me more about your property?"
             _append_and_save(session, user_message, reply)
             return jsonify({"reply": reply, "session_id": session["session_id"]})
@@ -150,9 +203,11 @@ def _register_routes(app: Flask) -> None:
             cross_result    = recommend_cross_city(features, city or "unknown", cities)
             explanation     = generate_explanation(
                 client, city or "unknown", features, cross_result.rec,
-                extracted.get("detected_language", "he"),
+                session.get("detected_language", "he"),
                 is_cross_city=True,
                 source_cities=cross_result.source_cities,
+                listing_scenario=session.get("listing_scenario"),
+                expected_price=session.get("expected_price"),
             )
             _append_and_save(session, user_message, explanation)
             return jsonify({
@@ -172,7 +227,7 @@ def _register_routes(app: Flask) -> None:
 
         # ── 5. Run ML pipeline ────────────────────────────────────────────────
         features       = session["last_features"] or {}
-        expected_price = extracted.get("expected_price")
+        expected_price = session.get("expected_price")
         city_state     = cities[city]
 
         try:
@@ -191,7 +246,10 @@ def _register_routes(app: Flask) -> None:
 
         # ── 6. Generate natural-language explanation (second Gemini call) ─────
         explanation = generate_explanation(
-            client, city, features, rec, extracted.get("detected_language", "he")
+            client, city, features, rec,
+            session.get("detected_language", "he"),
+            listing_scenario=session.get("listing_scenario"),
+            expected_price=session.get("expected_price"),
         )
 
         # ── 7. Persist and respond ────────────────────────────────────────────

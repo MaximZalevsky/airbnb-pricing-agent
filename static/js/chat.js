@@ -157,14 +157,13 @@ function appendRecCard(rec, replyText) {
     `${esc(currency)}${Math.round(rec.price_max)}`
   );
 
-  // Meta: tier badge + confidence bar
+  // Meta: tier badge
   const metaDiv      = document.createElement('div');
   metaDiv.className  = 'rec-meta';
   const tierLabel    = (TIER_LABELS[lang] || TIER_LABELS.he)[rec.tier_label] || rec.tier_label;
   const tierClass    = TIER_CSS_CLASS[rec.tier_label] || 'tier-unknown';
   const tierBadge    = el('span', `tier-badge ${tierClass}`, tierLabel);
-  const confWrap     = buildConfBar(rec.confidence_pct, isHe);
-  metaDiv.append(tierBadge, confWrap);
+  metaDiv.append(tierBadge);
 
   body.append(priceDiv, rangeDiv, metaDiv);
   card.append(header, body);
@@ -172,11 +171,6 @@ function appendRecCard(rec, replyText) {
   // Cross-city notice
   if (rec.is_cross_city) {
     card.append(buildCrossCityNotice(rec.source_cities, isHe));
-  }
-
-  // Comparables
-  if (rec.comparables && rec.comparables.length > 0) {
-    card.append(buildComparables(rec.comparables, currency, isHe));
   }
 
   chatWindow.insertBefore(card, typingIndicator);
@@ -290,7 +284,7 @@ function showWelcome() {
   appendBubble(
     'agent',
     'שלום! 👋 אני יועץ תמחור Airbnb חכם.\n' +
-    'ספר לי על הנכס שלך — עיר, סוג נכס, ומספר אורחים — ואמליץ על מחיר אופטימלי.'
+    'אפשר לתאר לי את הנכס בצורה חופשית — איפה הוא נמצא, איזה סוג נכס זה, כמה אורחים הוא מתאים לארח, או כל פרט אחר שכבר ידוע לך. אני אשאל רק על הפרטים שחסרים כדי לתת המלצת מחיר מדויקת יותר.'
   );
 }
 
@@ -301,11 +295,7 @@ function detectLang(text) {
 }
 
 function detectCurrency(rec, replyText) {
-  // Cross-city path: source_cities is populated
-  if ((rec.source_cities || []).includes('london')) return '£';
-  // Single-city London path: reply text contains £ (Gemini/fallback always uses it for London)
-  if (replyText && replyText.includes('£')) return '£';
-  return '€';
+  return '$';
 }
 
 /** Create a simple text element */
